@@ -1,0 +1,220 @@
+# Environment Variables & Credentials - CRITICAL
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+*.key
+*.pem
+*.p8
+*.crt
+*.cert
+serviceAccountKey.json
+google-*.json
+firebase-*.json
+aws_credentials
+.credentials
+credentials.json
+
+# Backend - Python
+backend/venv/
+backend/env/
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/*.egg-info/
+backend/dist/
+backend/build/
+backend/.mypy_cache/
+backend/.hypothesis/
+backend/.env
+backend/.env.local
+
+# Backend - Database Files
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+backend/watery.db
+watery.db
+
+# Frontend - Flutter Build Artifacts
+frontend/build/
+frontend/.dart_tool/
+frontend/.packages
+frontend/pubspec.lock
+frontend/windows/flutter/generated_plugins.cmake
+frontend/windows/flutter/generated_bundle_data.cpp
+frontend/macos/Flutter/GeneratedPluginRegistrant.swift
+frontend/ios/Flutter/GeneratedPluginRegistrant.swift
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/app/google-services.json
+frontend/android/app/key.jks
+frontend/lib/generated_plugin_registrant.dart
+
+# watery_mobile - Flutter Build Artifacts
+watery_mobile/build/
+watery_mobile/.dart_tool/
+watery_mobile/.packages
+watery_mobile/pubspec.lock
+watery_mobile/windows/flutter/generated_plugins.cmake
+watery_mobile/windows/flutter/generated_bundle_data.cpp
+watery_mobile/macos/Flutter/GeneratedPluginRegistrant.swift
+watery_mobile/ios/Flutter/GeneratedPluginRegistrant.swift
+watery_mobile/ios/Pods/
+watery_mobile/ios/Podfile.lock
+watery_mobile/android/.gradle/
+watery_mobile/android/local.properties
+watery_mobile/android/app/google-services.json
+watery_mobile/android/app/key.jks
+watery_mobile/android/app/*.jks
+watery_mobile/android/app/*.json
+watery_mobile/lib/generated_plugin_registrant.dart
+watery_mobile/.env
+watery_mobile/.env.local
+
+# watery_flutter - Flutter Build Artifacts
+watery_flutter/build/
+watery_flutter/.dart_tool/
+watery_flutter/.packages
+watery_flutter/pubspec.lock
+watery_flutter/windows/flutter/generated_plugins.cmake
+watery_flutter/windows/flutter/generated_bundle_data.cpp
+watery_flutter/macos/Flutter/GeneratedPluginRegistrant.swift
+watery_flutter/ios/Flutter/GeneratedPluginRegistrant.swift
+watery_flutter/ios/Pods/
+watery_flutter/ios/Podfile.lock
+watery_flutter/android/.gradle/
+watery_flutter/android/local.properties
+watery_flutter/android/app/google-services.json
+watery_flutter/android/app/key.jks
+watery_flutter/android/app/*.jks
+watery_flutter/android/app/*.json
+watery_flutter/lib/generated_plugin_registrant.dart
+watery_flutter/.env
+watery_flutter/.env.local
+
+# Web UI
+web_ui/node_modules/
+web_ui/dist/
+web_ui/.cache/
+web_ui/package-lock.json
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.iml
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+
+# Logs
+*.log
+logs/
+debug.log
+
+# Python related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Run Configuration
+.run/
+.idea/runConfigurations/
+
+# Local development config
+local_config.py
+config.local.py
+settings.local.py
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Generated files
+*.generated.dart
+
+# API Keys and Secrets folders
+**/config/secrets/**
+**/config/keys/**
+secrets/
+credentials/
+auth/
+
+# Backup files
+*.bak
+*.backup
+
+# Xcode build artifacts
+build/
+DerivedData/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcworkspace
+
+# Android specific
+.gradle/
+local.properties
+gradlew
+gradlew.bat
+.idea/
+*.iml
+*.keystore
+key.properties
+
+# Misc
+.classpath
+.project
+.settings/
+bin/

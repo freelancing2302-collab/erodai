@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erodai - Water Bodies Monitoring System</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f8;
+            color: #333;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        .sidebar h1 {
+            color: #0284C7;
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sidebar-subtitle {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .water-body-item {
+            background: #f9f9f9;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid #0284C7;
+        }
+        
+        .water-body-item:hover {
+            background: #e3f2fd;
+            transform: translateX(4px);
+        }
+        
+        .water-body-item.active {
+            background: #e3f2fd;
+            border-left-color: #DC2626;
+        }
+        
+        .water-body-item h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0284C7;
+            margin-bottom: 4px;
+        }
+        
+        .water-body-item p {
+            font-size: 12px;
+            color: #666;
+            margin: 2px 0;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+        
+        .status-normal {
+            background: #DCFCE7;
+            color: #166534;
+        }
+        
+        .status-alert {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        
+        #map {
+            flex: 1;
+            background: #e8f4f8;
+        }
+        
+        .map-control {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            margin: 10px;
+            z-index: 1000;
+        }
+        
+        .map-control h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0284C7;
+            margin-bottom: 8px;
+        }
+        
+        .map-control p {
+            font-size: 12px;
+            color: #666;
+            margin: 4px 0;
+        }
+        
+        .details-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 320px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 999;
+            display: none;
+        }
+        
+        .details-panel.show {
+            display: block;
+        }
+        
+        .details-panel h2 {
+            color: #0284C7;
+            font-size: 18px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #0284C7;
+            padding-bottom: 8px;
+        }
+        
+        .details-panel .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+        }
+        
+        .details-panel .detail-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .details-panel .detail-value {
+            color: #0284C7;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            float: right;
+        }
+        
+        .leaflet-popup-content {
+            font-size: 13px;
+            min-width: 200px;
+        }
+        
+        .leaflet-popup-content h3 {
+            margin: 0 0 8px 0;
+            color: #0284C7;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .leaflet-popup-content p {
+            margin: 4px 0;
+            color: #333;
+        }
+        
+        .legend {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+            font-size: 12px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .stat-box {
+            background: #f0f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0284C7;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h1>💧 ERODAI</h1>
+            <p class="sidebar-subtitle">Real-time Water Bodies Monitoring - Erode District, Tamil Nadu</p>
+            
+            <div id="waterBodiesList"></div>
+        </div>
+        
+        <!-- Map -->
+        <div id="map"></div>
+        
+        <!-- Details Panel -->
+        <div class="details-panel" id="detailsPanel">
+            <button class="close-btn" onclick="closeDetailsPanel()">×</button>
+            <div id="detailsContent"></div>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Water bodies data
+        const waterBodies = [
+            {id: 0, name: "Bhavani River", type: "river", lat: 11.3392, lon: 77.7542, area: 2.5, description: "Major river flowing through Erode", encroached: false},
+            {id: 1, name: "Noyyal River", type: "river", lat: 11.2875, lon: 77.5625, area: 1.8, description: "Tributary of Bhavani River", encroached: false},
+            {id: 2, name: "Pongalur Lake", type: "lake", lat: 11.4567, lon: 77.8234, area: 0.8, description: "Small reservoir in Pongalur", encroached: false},
+            {id: 3, name: "Siddhapudur Lake", type: "lake", lat: 11.3125, lon: 77.6875, area: 1.2, description: "Historic water body in Siddhapudur", encroached: false},
+            {id: 4, name: "Periyar Reservoir", type: "reservoir", lat: 11.1234, lon: 77.4567, area: 3.5, description: "Artificial reservoir for irrigation", encroached: true},
+            {id: 5, name: "Kalingarayan Canal", type: "canal", lat: 11.2567, lon: 77.6234, area: 0.6, description: "Irrigation canal", encroached: false},
+            {id: 6, name: "Valparai Dam", type: "reservoir", lat: 11.5432, lon: 77.3456, area: 2.0, description: "Dam reservoir in Valparai", encroached: false},
+            {id: 7, name: "Thadapalli Lake", type: "lake", lat: 11.0987, lon: 77.8765, area: 0.5, description: "Small seasonal water body", encroached: false},
+            {id: 8, name: "Kumbakarai Falls", type: "waterfall", lat: 11.6789, lon: 77.2345, area: 0.3, description: "Seasonal waterfall", encroached: false},
+            {id: 9, name: "Mettupalayam Tank", type: "tank", lat: 11.4123, lon: 77.5678, area: 0.4, description: "Agricultural storage tank", encroached: false}
+        ];
+        
+        let map;
+        let markers = {};
+        let selectedBody = null;
+        
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([11.3410, 77.7172], 11);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Add water body markers
+            waterBodies.forEach(body => {
+                const icon = L.divIcon({
+                    html: `<div style="background: ${body.encroached ? '#DC2626' : '#0284C7'}; border: 3px solid white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 14px;">${body.encroached ? '⚠️' : '💧'}</span></div>`,
+                    iconSize: [30, 30]
+                });
+                
+                const marker = L.marker([body.lat, body.lon], {icon}).addTo(map);
+                
+                const popupContent = `
+                    <div>
+                        <h3>📍 ${body.name}</h3>
+                        <p><strong>Type:</strong> ${body.type}</p>
+                        <p><strong>Area:</strong> ${body.area} sq km</p>
+                        <p><strong>Status:</strong> <span style="color: ${body.encroached ? '#DC2626' : '#16A34A'}">${body.encroached ? '🔴 ENCROACHED' : '✅ NORMAL'}</span></p>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                marker.on('click', () => selectWaterBody(body.id));
+                
+                markers[body.id] = marker;
+            });
+            
+            // Add district boundary
+            L.circle([11.3410, 77.7172], {
+                color: '#0284C7',
+                fillColor: '#0284C7',
+                fillOpacity: 0.05,
+                weight: 2,
+                radius: 30000,
+                dashArray: '5, 5'
+            }).addTo(map).bindPopup('Erode District Boundary');
+            
+            // Add legend
+            const legend = L.control({position: 'bottomright'});
+            legend.onAdd = function() {
+                const div = L.DomUtil.create('div', 'map-control');
+                div.innerHTML = `
+                    <h3>Legend</h3>
+                    <div style="margin-top: 8px;">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #0284C7;"></div>
+                            <span>Normal Water Body</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #DC2626;"></div>
+                            <span>Encroached Area</span>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="stat-number">${waterBodies.length}</div>
+                            <div class="stat-label">Water Bodies</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">${waterBodies.filter(b => b.encroached).length}</div>
+                            <div class="stat-label">Encroached</div>
+                        </div>
+                    </div>
+                `;
+                return div;
+            };
+            legend.addTo(map);
+        }
+        
+        // Populate sidebar
+        function populateSidebar() {
+            const list = document.getElementById('waterBodiesList');
+            list.innerHTML = waterBodies.map(body => `
+                <div class="water-body-item" onclick="selectWaterBody(${body.id})">
+                    <h3>${body.name}</h3>
+                    <p><strong>Type:</strong> ${body.type}</p>
+                    <p><strong>Area:</strong> ${body.area} sq km</p>
+                    <div class="status-badge ${body.encroached ? 'status-alert' : 'status-normal'}">
+                        ${body.encroached ? '⚠️ ENCROACHED' : '✅ NORMAL'}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Select water body
+        function selectWaterBody(id) {
+            selectedBody = waterBodies[id];
+            
+            // Update sidebar
+            document.querySelectorAll('.water-body-item').forEach((item, idx) => {
+                item.classList.toggle('active', idx === id);
+            });
+            
+            // Pan to location
+            map.setView([selectedBody.lat, selectedBody.lon], 13);
+            markers[id].openPopup();
+            
+            // Show details panel
+            showDetails(selectedBody);
+        }
+        
+        // Show details panel
+        function showDetails(body) {
+            const panel = document.getElementById('detailsPanel');
+            const content = document.getElementById('detailsContent');
+            
+            content.innerHTML = `
+                <h2>${body.name}</h2>
+                <div class="detail-row">
+                    <span class="detail-label">Type:</span>
+                    <span class="detail-value">${body.type}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Area:</span>
+                    <span class="detail-value">${body.area} sq km</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Location:</span>
+                    <span class="detail-value">${body.lat.toFixed(4)}°, ${body.lon.toFixed(4)}°</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value" style="color: ${body.encroached ? '#DC2626' : '#16A34A'}">
+                        ${body.encroached ? '🔴 ENCROACHED' : '✅ NORMAL'}
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Description:</span>
+                </div>
+                <p style="font-size: 12px; color: #666; margin-top: 8px;">${body.description}</p>
+                <button onclick="refreshSatelliteData(${body.id})" style="
+                    width: 100%;
+                    margin-top: 12px;
+                    padding: 8px;
+                    background: #0284C7;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 12px;
+                ">🛰️ Refresh Satellite Image</button>
+            `;
+            
+            panel.classList.add('show');
+        }
+        
+        // Close details panel
+        function closeDetailsPanel() {
+            document.getElementById('detailsPanel').classList.remove('show');
+        }
+        
+        // Refresh satellite data (placeholder)
+        function refreshSatelliteData(id) {
+            alert('🛰️ Fetching latest satellite imagery for ' + waterBodies[id].name + '...\n\nThis would connect to the backend API to fetch real-time satellite data and analyze water bodies for encroachment.');
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            populateSidebar();
+            selectWaterBody(0); // Select first water body by default
+        });
+    </script>
+</body>
+</html>
