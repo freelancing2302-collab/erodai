@@ -6,6 +6,7 @@ import '../../features/auth/screens/register_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/water_bodies/screens/water_bodies_screen.dart';
 import '../../features/monitoring/screens/monitoring_screen.dart';
+import '../../features/map/screens/map_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -26,6 +27,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/water-bodies',
         builder: (context, state) => const WaterBodiesScreen(),
+      ),
+      GoRoute(
+        path: '/map',
+        builder: (context, state) => const MapScreen(),
       ),
       GoRoute(
         path: '/monitoring/:id',

@@ -2,22 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import '../providers/realtime_provider.dart';
+import 'realtime_provider.dart';
 
-class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+class DashboardChartScreen extends ConsumerStatefulWidget {
+  const DashboardChartScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardChartScreen> createState() =>
+      _DashboardChartScreenState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+class _DashboardChartScreenState extends ConsumerState<DashboardChartScreen> {
   @override
   void initState() {
     super.initState();
     // Fetch dashboard data when widget loads
     Future.microtask(() {
-      ref.read(dashboardStatsProvider.notifier).fetchDashboardData();
+      ref
+          .read(dashboardStatsProvider.notifier)
+          .fetchDashboardData();
     });
   }
 

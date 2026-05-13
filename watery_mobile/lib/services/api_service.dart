@@ -220,4 +220,27 @@ class ApiService {
       return [];
     }
   }
+
+  // Email alert endpoint
+  Future<Map<String, dynamic>> sendEncroachmentAlert({required String waterBodyId}) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/water-bodies/$waterBodyId/alert-encroachment'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['detail'] ?? 'Failed to send email alert');
+      }
+    } catch (e) {
+      throw Exception('Error sending email alert: $e');
+    }
+  }
 }

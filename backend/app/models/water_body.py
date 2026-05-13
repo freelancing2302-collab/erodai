@@ -32,6 +32,14 @@ class WaterBody(Base):
     urbanization_level = Column(Float, default=0.0)  # 0-1 scale, urbanization around water body
     last_monitored = Column(DateTime(timezone=True))  # Last satellite monitoring timestamp
     alert_threshold = Column(Float, default=0.1)  # Alert threshold in sq km
+    is_seasonal = Column(Boolean, default=False)  # Whether water body is seasonal (dries up)
+    baseline_summer_area = Column(Float, default=0.0)  # Expected water area in summer (sq km)
+    baseline_monsoon_area = Column(Float, default=0.0)  # Expected water area in monsoon (sq km)
+    baseline_post_monsoon_area = Column(Float, default=0.0)  # Expected water area in post-monsoon (sq km)
+    last_monitoring_season = Column(String, default="unknown")  # Last monitoring season: summer, monsoon, post-monsoon, dry-season
+    last_water_loss_percent = Column(Float, default=0.0)  # Last recorded water loss percentage
+    is_encroached = Column(Boolean, default=False)  # Encroachment status - set to True by default
+    encroached_at = Column(DateTime(timezone=True))  # When encroachment was detected/set
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -82,3 +90,18 @@ class Alert(Base):
     resolved_at = Column(DateTime(timezone=True))
     is_resolved = Column(Boolean, default=False)
     metadata_info = Column(JSON)
+
+
+class HistoricalRecord(Base):
+    """Historical record model for 15-day tracking"""
+    __tablename__ = "historical_records"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    water_body_id = Column(Integer, index=True)
+    water_body_name = Column(String)
+    water_percentage = Column(Float)  # Percentage of water detected
+    area_sq_km = Column(Float)  # Area of water detected
+    encroachment_percentage = Column(Float, default=0.0)
+    recorded_at = Column(DateTime(timezone=True), server_default=func.now())
+    water_quality = Column(String)
+    metadata_info = Column(JSON)  # Additional monitoring data

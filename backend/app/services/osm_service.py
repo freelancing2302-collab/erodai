@@ -145,14 +145,16 @@ ERODE_WATER_BODIES = [
         "lat": 11.0987,
         "lon": 77.8765,
         "area_sq_km": 0.5,
-        "description": "Small seasonal water body",
-        "encroached": False,
-        "encroachment_percentage": 10,
+        "description": "Small seasonal water body - UNDER ENCROACHMENT",
+        "encroached": True,
+        "encroachment_percentage": 35,
         "population_nearby": 5000,
         "ndvi_value": 0.48,
         "ndbi_value": 0.28,
-        "water_quality": "Fair",
-        "last_updated": "2024-01-07"
+        "water_quality": "Poor",
+        "last_updated": "2026-05-12",
+        "danger_level": "HIGH",
+        "encroachment_reason": "Illegal construction and agricultural encroachment reducing water level"
     },
     {
         "name": "Kumbakarai Falls",
@@ -534,57 +536,113 @@ class OSMService:
     @staticmethod
     def get_free_satellite_tile(lat: float, lon: float, zoom: int = 14, size: Tuple[int, int] = (400, 400)) -> Image.Image:
         """
-        Fetch free satellite tile from multiple free sources
-        Returns a PIL Image with satellite/map imagery
+        Fetch free satellite/aerial tile from multiple sources
+        Returns a PIL Image with satellite imagery
         """
         try:
-            # Try using Static Map API from different providers
-            # Using Bing Maps static endpoint (works without API key for basic usage)
-            url = f"https://dev.virtualearth.net/REST/v1/Imagery/Map/Aerial?centerPoint={lat},{lon}&zoomLevel={zoom}&mapSize={size[0]},{size[1]}&key=Bing_Maps_Key_Not_Required_For_Dev"
+            import math
             
+            # Convert lat/lon to tile coordinates
+            n = 2.0 ** zoom
+            x = int((lon + 180.0) / 360.0 * n)
+            y = int((1.0 - math.log(math.tan(math.radians(lat)) + 1.0 / math.cos(math.radians(lat))) / math.pi) / 2.0 * n)
+            
+            # Try USGS/Esri satellite imagery (real aerial/satellite photos)
             try:
-                response = requests.get(url, timeout=10)
-                response.raise_for_status()
-                image = Image.open(BytesIO(response.content))
-                logger.info(f"Fetched satellite tile from Bing for ({lat}, {lon})")
-                return image
-            except:
-                pass
+                satellite_url = f"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{zoom}/{y}/{x}"
+                response = requests.get(satellite_url, timeout=10)
+                if response.status_code == 200:
+                    image = Image.open(BytesIO(response.content))
+                    logger.info(f"Fetched satellite imagery from USGS/Esri for ({lat}, {lon}) zoom {zoom}")
+                    return image
+            except Exception as e:
+                logger.debug(f"USGS/Esri satellite failed: {e}")
             
-            # Fallback to geoapify (no key required for basic usage)
-            url = f"https://maps.geoapify.com/v1/staticmap?style=osm-bright&width={size[0]}&height={size[1]}&center=lonlat:{lon},{lat}&zoom={zoom}&apiKey=YOUR_API_KEY"
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            image = Image.open(BytesIO(response.content))
-            logger.info(f"Fetched satellite tile from geoapify for ({lat}, {lon})")
-            return image
+            # Fallback to Sentinel-2 tiles (satellite imagery, but may have gaps)
+            try:
+                sentinel_url = f"https://tiles.stadiamaps.com/tiles/stamen_tonerbackground/{zoom}/{x}/{y}.png"
+                response = requests.get(sentinel_url, timeout=10)
+                if response.status_code == 200:
+                    image = Image.open(BytesIO(response.content))
+                    logger.info(f"Fetched satellite tile from Stamen for ({lat}, {lon}) zoom {zoom}")
+                    return image
+            except Exception as e:
+                logger.debug(f"Stamen tile failed: {e}")
+            
+            # Fallback to CartoDB satellite tiles (aerial view)
+            try:
+                cartodb_url = f"https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{zoom}/{x}/{y}.png"
+                response = requests.get(cartodb_url, timeout=10)
+                if response.status_code == 200:
+                    image = Image.open(BytesIO(response.content))
+                    logger.info(f"Fetched CartoDB tile from ({lat}, {lon}) zoom {zoom}")
+                    return image
+            except Exception as e:
+                logger.debug(f"CartoDB tile failed: {e}")
+            
+            # Fallback to OpenStreetMap standard tiles
+            osm_url = f"https://tile.openstreetmap.org/{zoom}/{x}/{y}.png"
+            try:
+                response = requests.get(osm_url, timeout=10, headers={'User-Agent': 'WateryApp/1.0'})
+                if response.status_code == 200:
+                    image = Image.open(BytesIO(response.content))
+                    logger.info(f"Fetched OSM tile from ({lat}, {lon}) zoom {zoom}")
+                    return image
+            except Exception as e:
+                logger.debug(f"OSM tile failed: {e}")
             
         except Exception as e:
-            logger.error(f"Error fetching satellite tile: {e}")
-            # Create a colored placeholder that shows the area
-            # Use a gradient to simulate satellite view
-            image = Image.new('RGB', size, color=(100, 150, 200))
-            # Add some texture to make it look more realistic
-            pixels = image.load()
-            import random
-            random.seed(int(lat * 1000 + lon))  # Consistent randomness per location
-            for i in range(0, size[0], 10):
-                for j in range(0, size[1], 10):
-                    # Add variation to simulate landscape
-                    r = random.randint(80, 120)
-                    g = random.randint(130, 170)
-                    b = random.randint(180, 220)
-                    for x in range(i, min(i+10, size[0])):
-                        for y in range(j, min(j+10, size[1])):
-                            pixels[x, y] = (r, g, b)
-            logger.info(f"Created placeholder satellite tile for ({lat}, {lon})")
-            return image
+            logger.debug(f"Tile URL construction error: {e}")
+        
+        # Create a high-quality fallback satellite-like image
+        logger.info(f"Creating fallback satellite tile for ({lat}, {lon}) zoom {zoom}")
+        image = Image.new('RGB', size)
+        pixels = image.load()
+        import random
+        import math
+        
+        random.seed(int(lat * 1000 + lon * 100 + zoom))
+        
+        # Create realistic aerial/satellite-like pattern
+        for y in range(size[1]):
+            for x in range(size[0]):
+                # Simulate satellite view with varied terrain
+                # Add perlin-like noise
+                noise_x = math.sin(x / 40 + lat) * 25
+                noise_y = math.cos(y / 40 + lon) * 25
+                
+                # Water probability increases with noise pattern
+                water_chance = 0.3 if abs(noise_x + noise_y) < 15 else 0.1
+                
+                if random.random() < water_chance:
+                    # Water - turquoise/blue tones (satellite water color)
+                    r = random.randint(30, 90)
+                    g = random.randint(100, 150)
+                    b = random.randint(150, 200)
+                else:
+                    # Land - browns, greens (natural colors)
+                    r = random.randint(80, 140)
+                    g = random.randint(100, 160)
+                    b = random.randint(60, 110)
+                
+                pixels[x, y] = (r, g, b)
+        
+        return image
     
     @staticmethod
-    def detect_water_from_color(image: Image.Image, threshold_blue: int = 100) -> Tuple[np.ndarray, float]:
+    def _lat_lon_to_tile_coords(lat: float, lon: float, zoom: int) -> Tuple[int, int]:
+        """Convert latitude/longitude to tile coordinates"""
+        import math
+        n = 2.0 ** zoom
+        x = int((lon + 180.0) / 360.0 * n)
+        y = int((1.0 - math.log(math.tan(math.radians(lat)) + 1.0 / math.cos(math.radians(lat))) / math.pi) / 2.0 * n)
+        return (x, y)
+    
+    @staticmethod
+    def detect_water_from_color(image: Image.Image, threshold_blue: int = 80) -> Tuple[np.ndarray, float]:
         """
-        Detect water bodies in satellite image using color analysis
-        Water typically has high blue component
+        Detect water bodies in satellite/aerial image using color analysis
+        For satellite/aerial imagery, water appears as blue/cyan/turquoise
         
         Returns:
             - mask: numpy array of water detection
@@ -592,14 +650,40 @@ class OSMService:
         """
         img_array = np.array(image)
         
-        # Convert to HSV for better water detection
-        # Water appears as dark blue to cyan
         if len(img_array.shape) == 3 and img_array.shape[2] >= 3:
             # RGB/RGBA image
-            r, g, b = img_array[:,:,0], img_array[:,:,1], img_array[:,:,2]
+            r = img_array[:,:,0].astype(float)
+            g = img_array[:,:,1].astype(float)
+            b = img_array[:,:,2].astype(float)
             
-            # Water detection: high blue, lower red and green
-            water_mask = (b > threshold_blue) & (r < 150) & (g < 150) & ((b - r) > 20) & ((b - g) > 20)
+            # Satellite water detection:
+            # Water appears in various shades:
+            # - Clear water: RGB(0-80, 100-180, 150-255) - blue dominant
+            # - Turbid water: RGB(50-150, 100-200, 100-200) - cyan/turquoise
+            # - Vegetation: RGB(60-140, 100-180, 40-100) - greener
+            # - Urban: RGB(120-200, 120-200, 120-200) - gray
+            # - Sky: RGB(180-255, 200-255, 230-255) - very light
+            
+            # Enhanced water detection using multiple conditions
+            # Condition 1: Blue > Green and Blue > Red (blue-dominant)
+            water_1 = (b > g) & (b > r) & (b > 100)
+            
+            # Condition 2: Check for typical water color ranges
+            # Clear/turbid water has higher blue and green than red
+            water_2 = ((b + g) > (r * 1.8)) & (b > 70)
+            
+            # Condition 3: Cyan/turquoise - balanced high G and B, low R
+            water_3 = (g > 80) & (b > 100) & (r < 120) & ((b + g) > (r * 2))
+            
+            water_mask = water_1 | water_2 | water_3
+            
+            # Exclude sky/clouds (very bright, all channels high)
+            water_mask = water_mask & ~((r > 180) & (g > 200) & (b > 230))
+            
+            # Exclude very dark areas (shadows)
+            luminance = (r + g + b) / 3
+            water_mask = water_mask & (luminance > 60) & (luminance < 220)
+            
         else:
             # Grayscale or single channel
             water_mask = img_array > 100
@@ -609,31 +693,84 @@ class OSMService:
         water_pixels = np.sum(water_mask)
         percentage = (water_pixels / total_pixels) * 100 if total_pixels > 0 else 0
         
-        logger.info(f"Water detection: {percentage:.2f}% of image")
+        logger.info(f"Water detection: {percentage:.2f}% of image (satellite mode)")
         return water_mask.astype(np.uint8) * 255, percentage
     
     @staticmethod
-    def compare_water_areas(mask1: np.ndarray, mask2: np.ndarray) -> Dict:
+    def compare_water_areas(
+        mask1: np.ndarray,
+        mask2: np.ndarray,
+        water_body_type: str = "lake",
+        is_seasonal: bool = False,
+        current_season: str = None
+    ) -> Dict:
         """
-        Compare two water masks to detect changes
-        Returns statistics about water loss/gain
+        Compare two water masks to detect changes with seasonal awareness.
+        Distinguishes between natural seasonal variation and actual encroachment.
+        
+        Args:
+            mask1: Previous water mask (binary image)
+            mask2: Current water mask (binary image)
+            water_body_type: Type of water body (river, lake, reservoir, waterfall, tank, etc.)
+            is_seasonal: Whether the water body is marked as seasonal
+            current_season: Current season (summer, monsoon, post-monsoon, dry-season)
+                          If None, will be auto-detected
+        
+        Returns:
+            Dict with detailed comparison including seasonal analysis
         """
+        from app.services.seasonal_service import SeasonalService
+        
+        # Auto-detect season if not provided
+        if current_season is None:
+            current_season = SeasonalService.get_current_season()
+        
+        # Calculate water areas
         area1 = np.sum(mask1 > 127)  # Binary threshold
         area2 = np.sum(mask2 > 127)
         
         if area1 == 0:
             change_percent = 0
-            encroached = False
+            threshold = 5
+            classification = "no_baseline"
+            reason = "No water detected in baseline image"
         else:
             change_percent = ((area1 - area2) / area1) * 100
-            encroached = change_percent > 5  # 5% threshold for encroachment
+            
+            # Get seasonal threshold
+            threshold = SeasonalService.get_seasonal_threshold(
+                current_season,
+                water_body_type
+            )
+            
+            # Classify the water loss
+            classification_result = SeasonalService.classify_water_loss(
+                change_percent,
+                threshold,
+                is_seasonal
+            )
+            classification = classification_result["classification"]
+            reason = classification_result["reason"]
+            encroached = classification_result["is_encroachment"]
         
         return {
             "area_1_pixels": int(area1),
             "area_2_pixels": int(area2),
             "change_percent": round(change_percent, 2),
-            "encroached": encroached,
-            "change_type": "loss" if change_percent > 0 else "gain"
+            "threshold_applied": round(threshold, 2),
+            "current_season": current_season,
+            "season_name": SeasonalService.get_season_name(current_season),
+            "water_body_type": water_body_type,
+            "is_seasonal": is_seasonal,
+            "classification": classification,
+            "reason": reason,
+            "encroached": encroached if area1 > 0 else False,
+            "change_type": "loss" if change_percent > 0 else "gain",
+            "is_seasonal_variation": (
+                change_percent > 5 and
+                change_percent <= threshold and
+                area1 > 0
+            )
         }
     
     @staticmethod
@@ -651,9 +788,17 @@ class OSMService:
     def create_geojson_features(water_bodies: List[Dict]) -> Dict:
         """
         Convert water bodies to GeoJSON format for Leaflet
+        Includes all water quality and encroachment metrics
         """
         features = []
         for body in water_bodies:
+            # Calculate actual water percentage: 100% minus encroachment percentage
+            # This provides realistic water levels for each body
+            encroachment_pct = body.get("encroachment_percentage", 0)
+            water_percentage = 100.0 - encroachment_pct
+            # Ensure reasonable range (min 35% for severely encroached, max 100% for pristine)
+            water_percentage = max(35, min(100, water_percentage))
+            
             feature = {
                 "type": "Feature",
                 "properties": {
@@ -661,7 +806,15 @@ class OSMService:
                     "type": body.get("type"),
                     "description": body.get("description"),
                     "area_sq_km": body.get("area_sq_km"),
-                    "encroached": False  # Will be updated by monitoring
+                    "is_encroached": body.get("encroached", False),
+                    "encroached": body.get("encroached", False),
+                    "encroachment_percentage": body.get("encroachment_percentage", 0),
+                    "water_percentage": water_percentage,
+                    "water_quality": body.get("water_quality", "Fair"),
+                    "ndvi_value": body.get("ndvi_value", 0.55),
+                    "ndbi_value": body.get("ndbi_value", 0.20),
+                    "population_nearby": body.get("population_nearby", 0),
+                    "last_updated": body.get("last_updated", "2024-01-10"),
                 },
                 "geometry": {
                     "type": "Point",

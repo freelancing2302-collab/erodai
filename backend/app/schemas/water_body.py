@@ -39,6 +39,7 @@ class WaterBodyBase(BaseModel):
     body_type: Optional[str] = "lake"
     description: Optional[str] = None
     area_sq_km: float
+    is_encroached: Optional[bool] = False
 
 
 class WaterBodyCreate(WaterBodyBase):
@@ -49,6 +50,8 @@ class WaterBodyCreate(WaterBodyBase):
 class WaterBodyResponse(WaterBodyBase):
     """Water body response schema"""
     id: int
+    is_encroached: bool = False
+    encroached_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     
